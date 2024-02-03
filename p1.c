@@ -61,7 +61,35 @@ int main() {
         BackgroundNode* current = head; //initializing
         int terminated_index = 1;
         while (current) {
-            // temporarily removed
+            int status;
+            pid_t check = waitpid(current->process.PID, &status, WNOHANG); //checks for background processes
+            if (check > 0) { // A process gets terminated
+                char directory[400];
+                getcwd(directory, sizeof(directory));
+                printf("%d: %s/", terminated_index, directory); //"PID: /../../.."
+                char **temp_argument = current->process.argument;
+                while (*temp_argument) {
+                    printf("%s ", *temp_argument); //print the arguments after directory
+                    temp_argument++;
+                }
+                printf("%d has terminated.\n", terminated_index);
+                terminated_index++;
+                if (!previous) { 
+                    head = current->next;
+                } else {
+                    previous->next = current->next; //set previous to current
+                }
+                BackgroundNode* temp = current;
+                current = current->next;
+                for (int j = 0; j < temp->process.argument_size; j++) {
+                    free(temp->process.argument[j]);
+                }
+                free(temp->process.argument);
+                free(temp);
+            } else { //nothing terminated
+                previous = current; 
+                current = current->next;
+            }
         }
         char directory[400]; //create a string for directory
         getcwd(directory, sizeof(directory));
